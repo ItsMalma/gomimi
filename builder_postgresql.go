@@ -1,7 +1,6 @@
 package gomimi
 
 import (
-	"database/sql"
 	"fmt"
 	"strings"
 )
@@ -99,12 +98,11 @@ func writeConstraintPostgreSQL(constraint ConstraintDefinition) string {
 }
 
 type builderPostgreSQL struct {
-	db           *sql.DB
 	queryBuilder *strings.Builder
 }
 
-func NewBuilderPostgreSQL(db *sql.DB) Builder {
-	return &builderPostgreSQL{db: db, queryBuilder: new(strings.Builder)}
+func NewBuilderPostgreSQL() Builder {
+	return &builderPostgreSQL{queryBuilder: new(strings.Builder)}
 }
 
 func (builder *builderPostgreSQL) Begin() {
@@ -144,11 +142,11 @@ func (builder *builderPostgreSQL) CreateTable(name string, columns []ColumnDefin
 
 	builder.queryBuilder.WriteString(`);\n\n`)
 
-	return &tableBuilderPostgreSQL{tableName: name, db: builder.db, queryBuilder: builder.queryBuilder}
+	return &tableBuilderPostgreSQL{tableName: name, queryBuilder: builder.queryBuilder}
 }
 
 func (builder *builderPostgreSQL) AlterTable(name string) TableBuilder {
-	return &tableBuilderPostgreSQL{tableName: name, db: builder.db, queryBuilder: builder.queryBuilder}
+	return &tableBuilderPostgreSQL{tableName: name, queryBuilder: builder.queryBuilder}
 }
 
 func (builder *builderPostgreSQL) DropTable(name string) Builder {
@@ -163,7 +161,6 @@ func (builder *builderPostgreSQL) TruncateTable(name string) Builder {
 
 type tableBuilderPostgreSQL struct {
 	tableName    string
-	db           *sql.DB
 	queryBuilder *strings.Builder
 }
 
@@ -226,7 +223,7 @@ func (builder *tableBuilderPostgreSQL) AddIndex(index IndexDefinition) TableBuil
 }
 
 func (builder *tableBuilderPostgreSQL) AlterColumn(columnName string, callback func(alterColumnBuilder AlterColumnBuilder)) TableBuilder {
-	callback(&alterColumnBuilderPostgreSQL{tableName: builder.tableName, columnName: columnName, db: builder.db, queryBuilder: builder.queryBuilder})
+	callback(&alterColumnBuilderPostgreSQL{tableName: builder.tableName, columnName: columnName, queryBuilder: builder.queryBuilder})
 	return builder
 }
 
@@ -304,7 +301,6 @@ func (builder *tableBuilderPostgreSQL) RenameIndex(oldIndexName string, newIndex
 }
 
 type columnBuilderPostgreSQL struct {
-	db           *sql.DB
 	queryBuilder *strings.Builder
 
 	definition ColumnDefinition
@@ -364,7 +360,6 @@ func (builder *columnBuilderPostgreSQL) Build() ColumnDefinition {
 type alterColumnBuilderPostgreSQL struct {
 	tableName    string
 	columnName   string
-	db           *sql.DB
 	queryBuilder *strings.Builder
 }
 
