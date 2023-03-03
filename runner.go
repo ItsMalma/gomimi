@@ -14,6 +14,9 @@ func NewRunner(indicator Indicator, builder Builder) Runner {
 func (runner Runner) RunMigration(migrations ...Migration) {
 	currentMigrationName := runner.indicator.Current()
 	notFound := true
+	if currentMigrationName == "" {
+		notFound = false
+	}
 
 	for _, migration := range migrations {
 		if !notFound {
