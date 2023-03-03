@@ -1,24 +1,41 @@
 package gomimi
 
+import "fmt"
+
 type Runner struct {
-	builder Builder
+	indicator Indicator
+	builder   Builder
 }
 
-func NewRunner(builder Builder) Runner {
-	return Runner{builder}
+func NewRunner(indicator Indicator, builder Builder) Runner {
+	return Runner{indicator, builder}
 }
 
-func (runner Runner) Run(migrations ...Migration) {
+func (runner Runner) RunMigration(migrations ...Migration) {
+	currentMigrationName := runner.indicator.Current()
+	notFound := true
+
 	for _, migration := range migrations {
-		runner.builder.Begin()
-		if err := migration.Up(runner.builder); err != nil {
-			runner.builder.Rollback()
+		if !notFound {
 			runner.builder.Begin()
-			if err := migration.Down(runner.builder); err != nil {
+			if err := migration.Up(runner.builder); err != nil {
 				runner.builder.Rollback()
-				panic(err)
+				runner.builder.Begin()
+				if err := migration.Down(runner.builder); err != nil {
+					runner.builder.Rollback()
+					panic(err)
+				}
 			}
+			runner.builder.Commit()
+			currentMigrationName = migration.Name()
+		} else if migration.Name() == currentMigrationName {
+			notFound = false
 		}
-		runner.builder.Commit()
+	}
+
+	if notFound {
+		panic(fmt.Errorf(`migration with name "%v" not found`, currentMigrationName))
+	} else {
+		runner.indicator.Change(currentMigrationName)
 	}
 }
