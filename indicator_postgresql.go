@@ -36,7 +36,7 @@ func (indicator *indicatorPostgreSQL) CreateMigrationTable() {
 }
 
 func (indicator *indicatorPostgreSQL) Current() string {
-	if indicator.IfTableExists() {
+	if !indicator.IfTableExists() {
 		return ""
 	}
 
@@ -58,7 +58,7 @@ func (indicator *indicatorPostgreSQL) Current() string {
 }
 
 func (indicator *indicatorPostgreSQL) Change(newName string) {
-	if indicator.IfTableExists() {
+	if !indicator.IfTableExists() {
 		indicator.CreateMigrationTable()
 	}
 
